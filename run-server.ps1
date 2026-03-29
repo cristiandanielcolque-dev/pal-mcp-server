@@ -1609,7 +1609,7 @@ if exist ".pal_venv\Scripts\python.exe" (
     # Ensure wrapper script exists
     if (!(Test-Path $palWrapper)) {
         Write-Info "Creating wrapper script for Gemini CLI..."
-        @"
+        $wrapperContent = @"
 @echo off
 cd /d "%~dp0"
 if exist ".pal_venv\Scripts\python.exe" (
@@ -1617,7 +1617,8 @@ if exist ".pal_venv\Scripts\python.exe" (
 ) else (
     python server.py %*
 )
-"@ | Out-File -FilePath $palWrapper -Encoding ASCII
+"@
+        $wrapperContent | Out-File -FilePath $palWrapper -Encoding ASCII
         
         Write-Success "Created pal-mcp-server.cmd wrapper script"
     }
@@ -1654,7 +1655,7 @@ if exist ".pal_venv\Scripts\python.exe" (
         Write-Host ""
         Write-Host "Manual config location: $geminiConfig"
         Write-Host "Add this configuration:"
-        Write-Host @"
+        $dummy = @"
 {
   "mcpServers": {
     "pal": {
@@ -1662,7 +1663,8 @@ if exist ".pal_venv\Scripts\python.exe" (
     }
   }
 }
-"@ -ForegroundColor Yellow
+"@
+        Write-Host $dummy -ForegroundColor Yellow
     }
 }   
 
@@ -1901,7 +1903,7 @@ function Test-QwenCliIntegration {
 
 # Show script help
 function Show-Help {
-    Write-Host @"
+    $helpText = @"
 PAL MCP Server - Setup and Launch Script
 
 USAGE:
@@ -1928,7 +1930,8 @@ EXAMPLES:
 .\run-server.ps1 -Docker -Follow      # Docker with log following
 
 For more information, visit: https://github.com/BeehiveInnovations/pal-mcp-server
-"@ -ForegroundColor White
+"@
+    Write-Host $helpText -ForegroundColor White
 }
 
 # Show version information
@@ -2062,7 +2065,7 @@ function Initialize-EnvFile {
     
     if (!(Test-Path ".env")) {
         Write-Info "Creating default .env file..."
-        @"
+        $defaultEnv = @"
 # API Keys - Replace with your actual keys
 GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_API_KEY=your_google_api_key_here
@@ -2088,7 +2091,8 @@ DEFAULT_THINKING_MODE_THINKDEEP=high
 #DISABLED_TOOLS=
 #MAX_MCP_OUTPUT_TOKENS=
 #TZ=UTC
-"@ | Out-File -FilePath ".env" -Encoding UTF8
+"@
+        Set-Content -Path ".env" -Value $defaultEnv -Encoding utf8
         
         Write-Success "Default .env file created"
         Write-Warning "Please edit .env file with your actual API keys"
@@ -2110,7 +2114,10 @@ function Import-EnvFile {
         foreach ($line in $envContent) {
             if ($line -match '^([^#][^=]*?)=(.*)$') {
                 $key = $matches[1].Trim()
-                $value = $matches[2].Trim() -replace '^["'']|["'']$', ''
+                $value = $matches[2].Trim()
+                # Clean quotes manually for PS 5.1 compatibility
+                if ($value.StartsWith('"') -and $value.EndsWith('"')) { $value = $value.Substring(1, $value.Length - 2) }
+                if ($value.StartsWith("'") -and $value.EndsWith("'")) { $value = $value.Substring(1, $value.Length - 2) }
                 
                 # Set environment variable for the current session
                 [Environment]::SetEnvironmentVariable($key, $value, "Process")
