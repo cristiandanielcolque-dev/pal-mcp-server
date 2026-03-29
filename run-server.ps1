@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Installation, configuration, and launch script for PAL MCP server on Windows.
 
@@ -1360,7 +1360,7 @@ function Configure-McpClient {
 
     # Check if already configured and analyze existing configuration
     $existingConfig = Get-ExistingMcpConfigType -Client $Client -ConfigPath $configPath
-    $newConfigType = if ($UseDocker) { "Docker" } else { "Python" }
+    if ($UseDocker) { $newConfigType = "Docker" } else { $newConfigType = "Python" }
     
     if ($existingConfig.Exists) {
         Write-Info "Found existing PAL MCP configuration in $($Client.Name)"
@@ -1444,13 +1444,12 @@ function Configure-McpClient {
             }
         }
 
-        # Generate server config
-        $serverConfig = if ($UseDocker) { 
+        if ($UseDocker) { 
             # Use docker run for all clients (more reliable than docker exec)
-            Get-DockerMcpConfigRun $ServerPath
+            $serverConfig = Get-DockerMcpConfigRun $ServerPath
         }
         else { 
-            Get-PythonMcpConfig $PythonPath $ServerPath 
+            $serverConfig = Get-PythonMcpConfig $PythonPath $ServerPath 
         }
 
         # Navigate and set configuration
@@ -1764,7 +1763,7 @@ function Test-QwenCliIntegration {
                     $cwdMatches = ([string]::IsNullOrEmpty($cwdValue) -or $cwdValue -eq $scriptDir)
 
                     if ($commandMatches -and $argsMatches -and $cwdMatches) {
-                        $configStatus = $legacyRemoved ? "cleanup" : "match"
+                        if ($legacyRemoved) { $configStatus = "cleanup" } else { $configStatus = "match" }
                     }
                     else {
                         $configStatus = "mismatch"
